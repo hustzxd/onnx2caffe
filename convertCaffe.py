@@ -6,8 +6,9 @@ import onnx
 import numpy as np
 import caffe
 from caffe.proto import caffe_pb2
+
 caffe.set_mode_cpu()
-from onnx2caffe._transformers import ConvAddFuser,ConstantsToInitializers
+from onnx2caffe._transformers import ConvAddFuser, ConstantsToInitializers
 from onnx2caffe._graph import Graph
 
 import onnx2caffe._operators as cvt
@@ -22,8 +23,8 @@ transformers = [
     ConvAddFuser(),
 ]
 
-def convertToCaffe(graph, prototxt_save_path, caffe_model_save_path):
 
+def convertToCaffe(graph, prototxt_save_path, caffe_model_save_path):
     exist_edges = []
     layers = []
     exist_nodes = []
@@ -34,7 +35,6 @@ def convertToCaffe(graph, prototxt_save_path, caffe_model_save_path):
         layers.append(input_layer)
         exist_edges.append(i[0])
         graph.channel_dims[edge_name] = graph.shape_dict[edge_name][1]
-
 
     for id, node in enumerate(graph.nodes):
         node_name = node.name
@@ -54,8 +54,8 @@ def convertToCaffe(graph, prototxt_save_path, caffe_model_save_path):
             err.unsupported_op(node)
             continue
         converter_fn = cvt._ONNX_NODE_REGISTRY[op_type]
-        layer = converter_fn(node,graph,err)
-        if type(layer)==tuple:
+        layer = converter_fn(node, graph, err)
+        if type(layer) == tuple:
             for l in layer:
                 layers.append(l)
         else:
@@ -65,12 +65,12 @@ def convertToCaffe(graph, prototxt_save_path, caffe_model_save_path):
             exist_edges.append(out)
 
     net = caffe_pb2.NetParameter()
-    for id,layer in enumerate(layers):
+    for id, layer in enumerate(layers):
         layers[id] = layer._to_proto()
     net.layer.extend(layers)
 
     with open(prototxt_save_path, 'w') as f:
-        print(net,file=f)
+        print(net, file=f)
 
     caffe.set_mode_cpu()
     deploy = prototxt_save_path
@@ -92,6 +92,7 @@ def convertToCaffe(graph, prototxt_save_path, caffe_model_save_path):
     net.save(caffe_model_save_path)
     return net
 
+
 def getGraph(onnx_path):
     model = onnx.load(onnx_path)
     model = shape_inference.infer_shapes(model)
@@ -102,10 +103,10 @@ def getGraph(onnx_path):
 
     return graph
 
+
 if __name__ == "__main__":
     onnx_path = sys.argv[1]
     prototxt_path = sys.argv[2]
     caffemodel_path = sys.argv[3]
     graph = getGraph(onnx_path)
     convertToCaffe(graph, prototxt_path, caffemodel_path)
-
